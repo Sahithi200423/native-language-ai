@@ -1,9 +1,13 @@
-import { ActingProgressState, MistakeItem, UserProfile } from '../types';
+import { ActingProgressState, ActorMistake, MistakeItem, PerformanceReviewItem, UserProfile } from '../types';
+import { INITIAL_ACTOR_MISTAKES } from '../data/actorMistakesData';
 
-const PROFILE_KEY = 'native_lang_ai_profile';
-const VOCAB_KEY = 'native_lang_ai_vocab';
-const MISTAKES_KEY = 'native_lang_ai_mistakes';
-const ACTING_KEY = 'native_lang_ai_acting';
+const PROFILE_KEY = 'scenelingo_profile';
+const OLD_PROFILE_KEY = 'native_lang_ai_profile';
+const VOCAB_KEY = 'scenelingo_vocab';
+const MISTAKES_KEY = 'scenelingo_mistakes';
+const ACTOR_MISTAKES_KEY = 'scenelingo_actor_mistakes';
+const ACTING_KEY = 'scenelingo_acting';
+const REVIEWS_KEY = 'scenelingo_reviews';
 
 export const defaultActingProgress: ActingProgressState = {
   practicedEmotions: ['happiness', 'sadness', 'anger'],
@@ -34,7 +38,7 @@ export const defaultActingProgress: ActingProgressState = {
 };
 
 export const defaultProfile: UserProfile = {
-  name: 'Learner',
+  name: 'Actor',
   targetLanguage: 'te', // Telugu as primary initial language
   level: 'beginner',
   goalMinutesPerDay: 15,
@@ -45,19 +49,26 @@ export const defaultProfile: UserProfile = {
   speakingSessionsCount: 5,
   isOnboarded: true,
   theme: 'light',
+  actorGoals: ['Dialogue Delivery', 'Language Pronunciation', 'Emotional Expression', 'Audition Preparation'],
+  actingMedium: 'Film',
+  firstPracticePreference: 'Dialogue',
+  currentRole: 'Lead in Regional Drama',
   settings: {
     showPronunciationGuide: true,
     showRomanization: true,
     autoPlayAudio: false,
     speechSpeed: 1.0,
     dailyReminder: true,
+    cameraEnabled: true,
+    micEnabled: true,
+    cloudStorageEnabled: false,
   },
 };
 
 export const storageService = {
   getUserProfile(): UserProfile {
     try {
-      const data = localStorage.getItem(PROFILE_KEY);
+      const data = localStorage.getItem(PROFILE_KEY) || localStorage.getItem(OLD_PROFILE_KEY);
       if (data) {
         return JSON.parse(data);
       }
@@ -111,6 +122,42 @@ export const storageService = {
     }
   },
 
+  getActorMistakes(): ActorMistake[] {
+    try {
+      const data = localStorage.getItem(ACTOR_MISTAKES_KEY);
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error('Failed to load actor mistakes', e);
+    }
+    return INITIAL_ACTOR_MISTAKES;
+  },
+
+  saveActorMistakes(mistakes: ActorMistake[]): void {
+    try {
+      localStorage.setItem(ACTOR_MISTAKES_KEY, JSON.stringify(mistakes));
+    } catch (e) {
+      console.error('Failed to save actor mistakes', e);
+    }
+  },
+
+  getPerformanceReviews(): PerformanceReviewItem[] {
+    try {
+      const data = localStorage.getItem(REVIEWS_KEY);
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error('Failed to load performance reviews', e);
+    }
+    return [];
+  },
+
+  savePerformanceReviews(reviews: PerformanceReviewItem[]): void {
+    try {
+      localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
+    } catch (e) {
+      console.error('Failed to save performance reviews', e);
+    }
+  },
+
   getActingProgress(): ActingProgressState {
     try {
       const data = localStorage.getItem(ACTING_KEY);
@@ -132,9 +179,12 @@ export const storageService = {
   resetAll(): void {
     try {
       localStorage.removeItem(PROFILE_KEY);
+      localStorage.removeItem(OLD_PROFILE_KEY);
       localStorage.removeItem(VOCAB_KEY);
       localStorage.removeItem(MISTAKES_KEY);
+      localStorage.removeItem(ACTOR_MISTAKES_KEY);
       localStorage.removeItem(ACTING_KEY);
+      localStorage.removeItem(REVIEWS_KEY);
     } catch (e) {
       console.error('Failed to reset storage', e);
     }

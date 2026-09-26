@@ -4,15 +4,16 @@ import { Layout } from './components/layout/Layout';
 import { LandingPage } from './pages/LandingPage';
 import { OnboardingModal } from './pages/OnboardingModal';
 import { DashboardPage } from './pages/DashboardPage';
-import { LearnPage } from './pages/LearnPage';
-import { PracticePage } from './pages/PracticePage';
-import { AITutorPage } from './pages/AITutorPage';
+import { LanguageStudioPage } from './pages/LanguageStudioPage';
+import { DialogueLabPage } from './pages/DialogueLabPage';
+import { ActingPage } from './pages/acting/ActingPage';
 import { SpeakingPage } from './pages/SpeakingPage';
-import { VocabularyPage } from './pages/VocabularyPage';
-import { MistakeBankPage } from './pages/MistakeBankPage';
+import { PerformanceReviewPage } from './pages/PerformanceReviewPage';
+import { MistakeSessionsPage } from './pages/MistakeSessionsPage';
+import { ActorVocabularyPage } from './pages/ActorVocabularyPage';
+import { AIActingCoachPage } from './pages/AIActingCoachPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { ActingPage } from './pages/acting/ActingPage';
 
 const AppContent: React.FC = () => {
   const { showLandingPage, activeTab } = useApp();
@@ -28,22 +29,28 @@ const AppContent: React.FC = () => {
 
   const renderActiveTab = () => {
     switch (activeTab) {
+      case 'home':
       case 'dashboard':
         return <DashboardPage />;
+      case 'language-studio':
+      case 'learn':
+        return <LanguageStudioPage />;
+      case 'dialogue-lab':
+        return <DialogueLabPage />;
+      case 'emotion-studio':
       case 'acting':
         return <ActingPage />;
-      case 'learn':
-        return <LearnPage />;
-      case 'practice':
-        return <PracticePage />;
-      case 'tutor':
-        return <AITutorPage />;
       case 'speaking':
         return <SpeakingPage />;
-      case 'vocabulary':
-        return <VocabularyPage />;
+      case 'performance-review':
+        return <PerformanceReviewPage />;
       case 'mistakes':
-        return <MistakeBankPage />;
+        return <MistakeSessionsPage />;
+      case 'vocabulary':
+        return <ActorVocabularyPage />;
+      case 'ai-acting-coach':
+      case 'tutor':
+        return <AIActingCoachPage />;
       case 'progress':
         return <ProgressPage />;
       case 'settings':

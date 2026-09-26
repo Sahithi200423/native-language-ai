@@ -6,26 +6,35 @@ import { TELUGU_LESSONS } from '../data/lessonsData';
 import { storageService, defaultProfile } from '../services/storageService';
 import {
   ActingProgressState,
+  ActorMistake,
   LanguageInfo,
   LearnerLevel,
   Lesson,
   MistakeItem,
+  PerformanceReviewItem,
   SupportedLanguageCode,
   UserProfile,
   VocabularyWord,
 } from '../types';
 
 export type ActiveNavTab =
+  | 'home'
+  | 'language-studio'
+  | 'dialogue-lab'
+  | 'emotion-studio'
+  | 'speaking'
+  | 'performance-review'
+  | 'mistakes'
+  | 'vocabulary'
+  | 'ai-acting-coach'
+  | 'progress'
+  | 'settings'
+  // Legacy aliases for full backward compatibility
   | 'dashboard'
   | 'learn'
   | 'practice'
   | 'tutor'
-  | 'speaking'
-  | 'acting'
-  | 'vocabulary'
-  | 'mistakes'
-  | 'progress'
-  | 'settings';
+  | 'acting';
 
 interface AppContextType {
   profile: UserProfile;
@@ -40,6 +49,12 @@ interface AppContextType {
   mistakes: MistakeItem[];
   resolveMistake: (id: string) => void;
   addMistake: (mistake: Omit<MistakeItem, 'id' | 'createdAt' | 'resolved' | 'attemptsCount'>) => void;
+  actorMistakes: ActorMistake[];
+  resolveActorMistake: (id: string) => void;
+  addActorMistake: (mistake: Omit<ActorMistake, 'id' | 'createdAt' | 'resolved'>) => void;
+  performanceReviews: PerformanceReviewItem[];
+  addPerformanceReview: (review: PerformanceReviewItem) => void;
+  deletePerformanceReview: (id: string) => void;
   lessons: Lesson[];
   activeLessonId: string | null;
   setActiveLessonId: (id: string | null) => void;
@@ -68,7 +83,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile>(() => storageService.getUserProfile());
-  const [activeTab, setActiveTab] = useState<ActiveNavTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveNavTab>('home');
   const [showLandingPage, setShowLandingPage] = useState<boolean>(!profile.isOnboarded);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -85,11 +100,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   });
 
-  // Mistakes state
+  // Legacy mistakes state
   const [mistakes, setMistakes] = useState<MistakeItem[]>(() => {
     const stored = storageService.getMistakes();
     return stored || INITIAL_MISTAKES;
   });
+
+  // Dedicated Actor Mistakes state
+  const [actorMistakes, setActorMistakes] = useState<ActorMistake[]>(() => {
+    return storageService.getActorMistakes();
+  });
+
+  const resolveActorMistake = (id: string) => {
+    setActorMistakes((prev) => {
+      const next = prev.map((m) => (m.id === id ? { ...m, resolved: true } : m));
+      storageService.saveActorMistakes(next);
+      return next;
+    });
+    updateProfile({ totalXp: profile.totalXp + 25 });
+  };
+
+  const addActorMistake = (mistakeData: Omit<ActorMistake, 'id' | 'createdAt' | 'resolved'>) => {
+    const newMistake: ActorMistake = {
+      ...mistakeData,
+      id: `act-mst-${Date.now()}`,
+      createdAt: 'Just now',
+      resolved: false,
+    };
+    setActorMistakes((prev) => {
+      const next = [newMistake, ...prev];
+      storageService.saveActorMistakes(next);
+      return next;
+    });
+  };
+
+  // Performance Reviews state
+  const [performanceReviews, setPerformanceReviews] = useState<PerformanceReviewItem[]>(() => {
+    return storageService.getPerformanceReviews();
+  });
+
+  const addPerformanceReview = (review: PerformanceReviewItem) => {
+    setPerformanceReviews((prev) => {
+      const next = [review, ...prev];
+      storageService.savePerformanceReviews(next);
+      return next;
+    });
+    updateProfile({ totalXp: profile.totalXp + 50 });
+  };
+
+  const deletePerformanceReview = (id: string) => {
+    setPerformanceReviews((prev) => {
+      const itemToDelete = prev.find(p => p.id === id);
+      if (itemToDelete?.videoBlobUrl) {
+        URL.revokeObjectURL(itemToDelete.videoBlobUrl);
+      }
+      const next = prev.filter((p) => p.id !== id);
+      storageService.savePerformanceReviews(next);
+      return next;
+    });
+  };
 
   // Lessons state
   const [lessons, setLessons] = useState<Lesson[]>(TELUGU_LESSONS);
@@ -293,6 +362,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     storageService.resetAll();
     setProfile(defaultProfile);
     setMistakes(INITIAL_MISTAKES);
+    setActorMistakes(storageService.getActorMistakes());
+    setPerformanceReviews([]);
     setVocabulary(INITIAL_VOCABULARY);
     setLessons(TELUGU_LESSONS);
     setActingProgress(storageService.getActingProgress());
@@ -313,6 +384,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         mistakes,
         resolveMistake,
         addMistake,
+        actorMistakes,
+        resolveActorMistake,
+        addActorMistake,
+        performanceReviews,
+        addPerformanceReview,
+        deletePerformanceReview,
         lessons,
         activeLessonId,
         setActiveLessonId,

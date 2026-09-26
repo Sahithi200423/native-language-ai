@@ -17,7 +17,35 @@ export interface LanguageInfo {
   };
 }
 
-export type LearnerLevel = 'beginner' | 'elementary' | 'intermediate' | 'conversational';
+export type LearnerLevel = 'beginner' | 'basic' | 'intermediate' | 'advanced' | 'elementary' | 'conversational';
+
+export type ActorImprovementGoal =
+  | 'Acting'
+  | 'Dialogue Delivery'
+  | 'Language Pronunciation'
+  | 'Diction'
+  | 'Emotional Expression'
+  | 'Voice Modulation'
+  | 'Audition Preparation'
+  | 'Speaking Confidence'
+  | 'Learning a New Language for a Role';
+
+export type ActingMedium =
+  | 'Film'
+  | 'Television'
+  | 'Theatre'
+  | 'Web Series'
+  | 'Short Films'
+  | 'Auditions'
+  | 'General Acting Practice';
+
+export type FirstPracticePreference =
+  | 'Dialogue'
+  | 'Emotion'
+  | 'Pronunciation'
+  | 'Voice'
+  | 'Facial Expression'
+  | 'Full Performance';
 
 export interface LearningGoal {
   id: string;
@@ -39,12 +67,19 @@ export interface UserProfile {
   speakingSessionsCount: number;
   isOnboarded: boolean;
   theme: 'light' | 'dark' | 'system';
+  actorGoals?: string[];
+  actingMedium?: string;
+  firstPracticePreference?: string;
+  currentRole?: string;
   settings: {
     showPronunciationGuide: boolean;
     showRomanization: boolean;
     autoPlayAudio: boolean;
     speechSpeed: number; // 0.8 to 1.2
     dailyReminder: boolean;
+    cameraEnabled?: boolean;
+    micEnabled?: boolean;
+    cloudStorageEnabled?: boolean;
   };
 }
 
@@ -62,6 +97,10 @@ export interface LearningPhrase {
   }[];
   culturalNote?: string;
   audioSampleUrl?: string;
+  emotion?: string;
+  actingIntention?: string;
+  pausePoints?: string;
+  voiceGuidance?: string;
 }
 
 export interface Lesson {
@@ -108,7 +147,7 @@ export interface PracticeExercise {
 export interface VocabularyWord {
   id: string;
   languageCode: SupportedLanguageCode;
-  category: 'Greetings' | 'Family' | 'Food' | 'Travel' | 'Numbers' | 'Essentials' | 'Emotions';
+  category: 'Greetings' | 'Family' | 'Food' | 'Travel' | 'Numbers' | 'Essentials' | 'Emotions' | 'Audition' | 'Scene' | 'Character';
   word: string; // Native script
   romanization: string;
   pronunciationGuide: string;
@@ -148,6 +187,47 @@ export interface MistakeItem {
   attemptsCount: number;
 }
 
+// Actor-specific Mistake Categories (20 categories)
+export type ActorMistakeCategory =
+  | 'Pronunciation'
+  | 'Diction'
+  | 'Wrong Word'
+  | 'Wrong Pause'
+  | 'Wrong Emphasis'
+  | 'Voice Modulation'
+  | 'Speaking Too Fast'
+  | 'Speaking Too Slowly'
+  | 'Emotion Not Clear'
+  | 'Overacting'
+  | 'Underacting'
+  | 'Facial Expression'
+  | 'Eye Expression'
+  | 'Body Language'
+  | 'Lack of Confidence'
+  | 'Unnatural Delivery'
+  | 'Wrong Emotional Intensity'
+  | 'Dialogue Memory'
+  | 'Lip Movement'
+  | 'Scene Understanding';
+
+export interface ActorMistake {
+  id: string;
+  languageCode: SupportedLanguageCode;
+  category: ActorMistakeCategory;
+  dialogueSnippet: string;
+  whatIDid: string;
+  whatToImprove: string;
+  whyItMatters: string;
+  howToFixIt: string;
+  practiceDialogue: {
+    native: string;
+    romanization: string;
+    englishMeaning: string;
+  };
+  resolved: boolean;
+  createdAt: string;
+}
+
 export interface ConfidenceFeedback {
   whatYouDidWell: string;
   oneImportantCorrection: string;
@@ -174,7 +254,9 @@ export interface TutorMessage {
   content: string;
   learningPhrase?: LearningPhrase;
   feedback?: ConfidenceFeedback;
-  type?: 'general' | 'grammar_breakdown' | 'vocabulary_help' | 'pronunciation_tip';
+  type?: 'general' | 'grammar_breakdown' | 'vocabulary_help' | 'pronunciation_tip' | 'acting_direction';
+  actingTip?: string;
+  languageCorrection?: string;
 }
 
 export interface SpeakingScenario {
@@ -250,11 +332,34 @@ export interface EmotionDetail {
   }[];
 }
 
+// 16 Scene Types for Dialogue Lab
+export type SceneType =
+  | 'Romantic'
+  | 'Emotional'
+  | 'Argument'
+  | 'Family'
+  | 'Friendship'
+  | 'Comedy'
+  | 'Serious'
+  | 'Audition'
+  | 'Confrontation'
+  | 'Goodbye'
+  | 'Reunion'
+  | 'Fear'
+  | 'Success'
+  | 'Failure'
+  | 'Betrayal'
+  | 'Confession';
+
 export interface ActingDialogue {
   id: string;
   emotion: EmotionType;
-  situation: string; // 'Love' | 'Family' | 'Friendship' | 'Argument' | 'Goodbye' | 'Success' | 'Failure' | 'Betrayal' | 'Fear' | 'Celebration' | 'Audition'
+  situation: string; // e.g. 'Goodbye'
+  sceneType?: SceneType;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   intensity: 'Mild' | 'Medium' | 'Strong';
+  actingIntention?: string;
+  context?: string;
   translations: Record<
     SupportedLanguageCode,
     {
@@ -262,6 +367,7 @@ export interface ActingDialogue {
       romanization: string;
       englishMeaning: string;
       pauseGuidance: string;
+      wordByWord?: { word: string; roman: string; meaning: string }[];
     }
   >;
   delivery: {
@@ -270,6 +376,7 @@ export interface ActingDialogue {
     eyes: string;
     face: string;
     body: string;
+    emphasis?: string;
   };
 }
 
@@ -340,4 +447,37 @@ export interface ActingProgressState {
     checklist: Record<string, boolean>;
     notes: string;
   }[];
+}
+
+// Performance Video Review
+export interface PerformanceTimelineEvent {
+  timestamp: string; // e.g. "00:03"
+  seconds: number;
+  note: string;
+  type: 'positive' | 'needs_work' | 'neutral';
+}
+
+export interface PerformanceDimensionReview {
+  name: string;
+  icon: string;
+  status: 'Strong' | 'Good' | 'Needs Practice' | 'Not Enough Evidence';
+  whatWentWell: string;
+  whatToImprove: string;
+  exercise: string;
+}
+
+export interface PerformanceReviewItem {
+  id: string;
+  title: string;
+  languageCode: SupportedLanguageCode;
+  dialogueTitle: string;
+  emotion: string;
+  videoBlobUrl?: string;
+  videoDuration?: number;
+  fileSize?: string;
+  createdAt: string;
+  timelineNotes: PerformanceTimelineEvent[];
+  dimensions: PerformanceDimensionReview[];
+  topImprovements: string[];
+  serviceConnected: boolean;
 }

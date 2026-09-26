@@ -84,22 +84,22 @@ export const SpeakingPage: React.FC = () => {
       {/* Header in English */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 dark:border-slate-800">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400">
-            AI Speaking Coach
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+            Speaking Coach • Scene Rehearsals
           </span>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-            Speaking & Pronunciation Practice
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            Actor Scene Drills & Spoken Delivery
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Listen to the native prompt, speak your reply, and receive encouraging AI feedback.
+            Listen to your scene partner's cue in {currentLanguage.name}, respond naturally in character, and receive targeted delivery feedback.
           </p>
         </div>
 
-        {/* Holistic Metric Pills in English */}
+        {/* Metric Pills in English */}
         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-          <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Pronunciation</span>
-          <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Grammar</span>
-          <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Confidence</span>
+          <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Diction</span>
+          <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Cadence</span>
+          <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Presence</span>
         </div>
       </div>
 
