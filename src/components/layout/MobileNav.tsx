@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   TrendingUp,
   Settings,
+  Drama,
   X,
 } from 'lucide-react';
 import { ActiveNavTab, useApp } from '../../context/AppContext';
@@ -37,6 +38,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isDrawerOpen, onCloseDrawe
     { id: 'practice', label: 'Practice', icon: Dumbbell },
     { id: 'tutor', label: 'AI Tutor', icon: Bot },
     { id: 'speaking', label: 'Speaking Coach', icon: Mic },
+    { id: 'acting', label: 'Acting & Expression', icon: Drama },
     { id: 'vocabulary', label: 'Vocabulary', icon: BookmarkCheck },
     { id: 'mistakes', label: 'Mistake Bank', icon: AlertTriangle, badge: unresolvedCount },
     { id: 'progress', label: 'Progress', icon: TrendingUp },

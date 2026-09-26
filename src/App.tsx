@@ -12,6 +12,7 @@ import { VocabularyPage } from './pages/VocabularyPage';
 import { MistakeBankPage } from './pages/MistakeBankPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ActingPage } from './pages/acting/ActingPage';
 
 const AppContent: React.FC = () => {
   const { showLandingPage, activeTab } = useApp();
@@ -29,6 +30,8 @@ const AppContent: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardPage />;
+      case 'acting':
+        return <ActingPage />;
       case 'learn':
         return <LearnPage />;
       case 'practice':

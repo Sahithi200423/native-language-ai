@@ -11,6 +11,7 @@ import {
   Settings,
   Sparkles,
   Flame,
+  Drama,
 } from 'lucide-react';
 import { ActiveNavTab, useApp } from '../../context/AppContext';
 
@@ -32,6 +33,7 @@ export const Sidebar: React.FC = () => {
     { id: 'practice', label: 'Practice', icon: Dumbbell },
     { id: 'tutor', label: 'AI Tutor', icon: Bot, badge: 'AI' },
     { id: 'speaking', label: 'Speaking Coach', icon: Mic, badge: 'Coach' },
+    { id: 'acting', label: 'Acting & Expression', icon: Drama, badge: 'New' },
     { id: 'vocabulary', label: 'Vocabulary', icon: BookmarkCheck },
     {
       id: 'mistakes',

@@ -1,8 +1,37 @@
-import { MistakeItem, UserProfile, VocabularyWord } from '../types';
+import { ActingProgressState, MistakeItem, UserProfile } from '../types';
 
 const PROFILE_KEY = 'native_lang_ai_profile';
 const VOCAB_KEY = 'native_lang_ai_vocab';
 const MISTAKES_KEY = 'native_lang_ai_mistakes';
+const ACTING_KEY = 'native_lang_ai_acting';
+
+export const defaultActingProgress: ActingProgressState = {
+  practicedEmotions: ['happiness', 'sadness', 'anger'],
+  completedDialogues: ['act-dial-1'],
+  completedVoiceExercises: ['voice-happy', 'voice-sad'],
+  completedEyeExercises: ['eye-1'],
+  completedFacialExercises: ['face-1'],
+  completedChallenges: [1],
+  selfEvaluations: [
+    {
+      id: 'eval-1',
+      date: 'Yesterday',
+      dialogueId: 'act-dial-1',
+      emotion: 'sadness',
+      checklist: {
+        maintainedEmotion: true,
+        naturalFace: true,
+        effectiveEyes: true,
+        appropriatePauses: true,
+        changedVoice: true,
+        avoidedOveracting: true,
+        naturalBody: true,
+        clearPronunciation: true,
+      },
+      notes: 'Focused on relaxing shoulders and speaking with softer breath resonance.',
+    },
+  ],
+};
 
 export const defaultProfile: UserProfile = {
   name: 'Learner',
@@ -82,13 +111,32 @@ export const storageService = {
     }
   },
 
+  getActingProgress(): ActingProgressState {
+    try {
+      const data = localStorage.getItem(ACTING_KEY);
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error('Failed to load acting progress', e);
+    }
+    return defaultActingProgress;
+  },
+
+  saveActingProgress(progress: ActingProgressState): void {
+    try {
+      localStorage.setItem(ACTING_KEY, JSON.stringify(progress));
+    } catch (e) {
+      console.error('Failed to save acting progress', e);
+    }
+  },
+
   resetAll(): void {
     try {
       localStorage.removeItem(PROFILE_KEY);
       localStorage.removeItem(VOCAB_KEY);
       localStorage.removeItem(MISTAKES_KEY);
+      localStorage.removeItem(ACTING_KEY);
     } catch (e) {
       console.error('Failed to reset storage', e);
     }
-  }
+  },
 };

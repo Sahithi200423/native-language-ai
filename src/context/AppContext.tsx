@@ -5,6 +5,7 @@ import { INITIAL_VOCABULARY } from '../data/vocabularyData';
 import { TELUGU_LESSONS } from '../data/lessonsData';
 import { storageService, defaultProfile } from '../services/storageService';
 import {
+  ActingProgressState,
   LanguageInfo,
   LearnerLevel,
   Lesson,
@@ -20,6 +21,7 @@ export type ActiveNavTab =
   | 'practice'
   | 'tutor'
   | 'speaking'
+  | 'acting'
   | 'vocabulary'
   | 'mistakes'
   | 'progress'
@@ -42,6 +44,17 @@ interface AppContextType {
   activeLessonId: string | null;
   setActiveLessonId: (id: string | null) => void;
   completeLesson: (id: string, score: number) => void;
+  actingProgress: ActingProgressState;
+  recordActingEmotionPractice: (emotionId: string) => void;
+  recordDialogueCompletion: (dialogueId: string) => void;
+  recordVoiceExerciseCompletion: (exerciseId: string) => void;
+  recordChallengeCompletion: (day: number) => void;
+  saveSelfEvaluation: (evaluation: {
+    dialogueId: string;
+    emotion: string;
+    checklist: Record<string, boolean>;
+    notes: string;
+  }) => void;
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   showLandingPage: boolean;
@@ -80,6 +93,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Lessons state
   const [lessons, setLessons] = useState<Lesson[]>(TELUGU_LESSONS);
+
+  const completeLesson = (id: string, score: number) => {
+    setLessons((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, completed: true } : l))
+    );
+    updateProfile({
+      completedLessonsCount: profile.completedLessonsCount + 1,
+      totalXp: profile.totalXp + Math.max(score, 50),
+    });
+  };
 
   // Theme state
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
@@ -187,14 +210,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const completeLesson = (id: string, score: number) => {
-    setLessons((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, completed: true, score } : l))
-    );
-    updateProfile({
-      completedLessonsCount: profile.completedLessonsCount + 1,
-      totalXp: profile.totalXp + 50,
+  // Acting Progress state
+  const [actingProgress, setActingProgress] = useState<ActingProgressState>(() =>
+    storageService.getActingProgress()
+  );
+
+  const recordActingEmotionPractice = (emotionId: string) => {
+    setActingProgress((prev) => {
+      if (prev.practicedEmotions.includes(emotionId)) return prev;
+      const next = {
+        ...prev,
+        practicedEmotions: [...prev.practicedEmotions, emotionId],
+      };
+      storageService.saveActingProgress(next);
+      return next;
     });
+    updateProfile({ totalXp: profile.totalXp + 20 });
+  };
+
+  const recordDialogueCompletion = (dialogueId: string) => {
+    setActingProgress((prev) => {
+      if (prev.completedDialogues.includes(dialogueId)) return prev;
+      const next = {
+        ...prev,
+        completedDialogues: [...prev.completedDialogues, dialogueId],
+      };
+      storageService.saveActingProgress(next);
+      return next;
+    });
+    updateProfile({ totalXp: profile.totalXp + 25 });
+  };
+
+  const recordVoiceExerciseCompletion = (exerciseId: string) => {
+    setActingProgress((prev) => {
+      if (prev.completedVoiceExercises.includes(exerciseId)) return prev;
+      const next = {
+        ...prev,
+        completedVoiceExercises: [...prev.completedVoiceExercises, exerciseId],
+      };
+      storageService.saveActingProgress(next);
+      return next;
+    });
+    updateProfile({ totalXp: profile.totalXp + 15 });
+  };
+
+  const recordChallengeCompletion = (day: number) => {
+    setActingProgress((prev) => {
+      if (prev.completedChallenges.includes(day)) return prev;
+      const next = {
+        ...prev,
+        completedChallenges: [...prev.completedChallenges, day],
+      };
+      storageService.saveActingProgress(next);
+      return next;
+    });
+    updateProfile({ totalXp: profile.totalXp + 50 });
+  };
+
+  const saveSelfEvaluation = (evaluation: {
+    dialogueId: string;
+    emotion: string;
+    checklist: Record<string, boolean>;
+    notes: string;
+  }) => {
+    const newEval = {
+      ...evaluation,
+      id: `eval-${Date.now()}`,
+      date: 'Just now',
+    };
+    setActingProgress((prev) => {
+      const next = {
+        ...prev,
+        selfEvaluations: [newEval, ...prev.selfEvaluations],
+      };
+      storageService.saveActingProgress(next);
+      return next;
+    });
+    updateProfile({ totalXp: profile.totalXp + 30 });
   };
 
   const resetProgress = () => {
@@ -203,6 +295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMistakes(INITIAL_MISTAKES);
     setVocabulary(INITIAL_VOCABULARY);
     setLessons(TELUGU_LESSONS);
+    setActingProgress(storageService.getActingProgress());
   };
 
   return (
@@ -224,6 +317,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeLessonId,
         setActiveLessonId,
         completeLesson,
+        actingProgress,
+        recordActingEmotionPractice,
+        recordDialogueCompletion,
+        recordVoiceExerciseCompletion,
+        recordChallengeCompletion,
+        saveSelfEvaluation,
         theme,
         setTheme,
         showLandingPage,

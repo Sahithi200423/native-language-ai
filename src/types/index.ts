@@ -193,3 +193,151 @@ export interface SpeakingScenario {
     english: string;
   };
 }
+
+export type EmotionType =
+  | 'happiness'
+  | 'sadness'
+  | 'anger'
+  | 'grief'
+  | 'love'
+  | 'fear'
+  | 'surprise'
+  | 'disappointment'
+  | 'calm'
+  | 'frustration'
+  | 'confidence'
+  | 'shyness'
+  | 'confusion'
+  | 'shock'
+  | 'excitement'
+  | 'jealousy'
+  | 'nervousness'
+  | 'hope'
+  | 'regret'
+  | 'longing';
+
+export interface EmotionDetail {
+  id: EmotionType;
+  name: string;
+  emoji: string;
+  shortDescription: string;
+  face: {
+    overall: string;
+    eyes: string;
+    eyebrows: string;
+    forehead: string;
+    mouth: string;
+    jaw: string;
+  };
+  voice: {
+    pitch: string;
+    volume: string;
+    speed: string;
+    pauses: string;
+    energy: string;
+    emotionalTone: string;
+  };
+  body: {
+    posture: string;
+    shoulders: string;
+    hands: string;
+    breathing: string;
+  };
+  intensityLevels: {
+    level: 1 | 2 | 3 | 4;
+    label: string;
+    guidance: string;
+  }[];
+}
+
+export interface ActingDialogue {
+  id: string;
+  emotion: EmotionType;
+  situation: string; // 'Love' | 'Family' | 'Friendship' | 'Argument' | 'Goodbye' | 'Success' | 'Failure' | 'Betrayal' | 'Fear' | 'Celebration' | 'Audition'
+  intensity: 'Mild' | 'Medium' | 'Strong';
+  translations: Record<
+    SupportedLanguageCode,
+    {
+      native: string;
+      romanization: string;
+      englishMeaning: string;
+      pauseGuidance: string;
+    }
+  >;
+  delivery: {
+    voice: string;
+    pause: string;
+    eyes: string;
+    face: string;
+    body: string;
+  };
+}
+
+export interface MultiEmotionDelivery {
+  emotion: EmotionType;
+  thought: string;
+  eyes: string;
+  face: string;
+  voice: string;
+  pace: string;
+  pause: string;
+  body: string;
+  intensity: string;
+}
+
+export interface VersatileDialogue {
+  id: string;
+  englishBase: string;
+  translations: Record<
+    SupportedLanguageCode,
+    {
+      native: string;
+      romanization: string;
+    }
+  >;
+  deliveries: Record<string, MultiEmotionDelivery>;
+}
+
+export interface EmotionTransitionExercise {
+  id: string;
+  fromEmotion: EmotionType;
+  toEmotion: EmotionType;
+  title: string;
+  scenario: string;
+  steps: {
+    step: number;
+    emotion: string;
+    cue: string;
+    eyes: string;
+    face: string;
+    voice: string;
+    pause: string;
+    body: string;
+  }[];
+}
+
+export interface ActingChallenge {
+  day: number;
+  title: string;
+  description: string;
+  emotion: EmotionType;
+  promptPhrase: string;
+  instructions: string[];
+}
+
+export interface ActingProgressState {
+  practicedEmotions: string[];
+  completedDialogues: string[];
+  completedVoiceExercises: string[];
+  completedEyeExercises: string[];
+  completedFacialExercises: string[];
+  completedChallenges: number[];
+  selfEvaluations: {
+    id: string;
+    date: string;
+    dialogueId: string;
+    emotion: string;
+    checklist: Record<string, boolean>;
+    notes: string;
+  }[];
+}
