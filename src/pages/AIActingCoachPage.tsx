@@ -9,28 +9,34 @@ import {
   Volume2,
   CheckCircle2,
   Lightbulb,
+  Info,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ttsService } from '../services/ttsService';
+import { aiActingCoachService } from '../services/aiActingCoachService';
 
 interface CoachMessage {
   id: string;
   sender: 'user' | 'coach';
   text: string;
+  source?: 'remote-ai' | 'local-rule-based';
   languageCorrection?: string;
   actingAdvice?: string;
   practiceExercise?: string;
 }
 
 export const AIActingCoachPage: React.FC = () => {
-  const { currentLanguage } = useApp();
+  const { currentLanguage, profile } = useApp();
+  const isServiceConfigured = aiActingCoachService.isServiceConfigured();
 
   const [inputQuestion, setInputQuestion] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<CoachMessage[]>([
     {
       id: 'msg-1',
       sender: 'coach',
-      text: `Hello! I am your AI Acting & Language Coach for ${currentLanguage.name}. Ask me about character intentions, subtext, natural pauses, screen gaze, or how to avoid melodrama in your scenes.`,
+      source: isServiceConfigured ? 'remote-ai' : 'local-rule-based',
+      text: `Hello! I am your Acting & Language Coach for ${currentLanguage.name}. Ask me about character intentions, subtext, natural pauses, screen gaze, or how to avoid melodrama in your scenes.`,
     },
   ]);
 
@@ -43,8 +49,8 @@ export const AIActingCoachPage: React.FC = () => {
     'How do I avoid overacting on camera?',
   ];
 
-  const handleSendPrompt = (question: string) => {
-    if (!question.trim()) return;
+  const handleSendPrompt = async (question: string) => {
+    if (!question.trim() || isLoading) return;
 
     const userMsg: CoachMessage = {
       id: `usr-${Date.now()}`,
@@ -52,59 +58,40 @@ export const AIActingCoachPage: React.FC = () => {
       text: question,
     };
 
-    // Generate structured coaching distinguishing Language Correction from Acting Advice
-    let response: CoachMessage = {
-      id: `coach-${Date.now() + 1}`,
-      sender: 'coach',
-      text: `Here is structured performance direction for your question: "${question}"`,
-    };
-
-    if (question.includes('sadness') || question.includes('crying')) {
-      response = {
-        ...response,
-        languageCorrection: `In ${currentLanguage.name}, avoid over-elongating sorrowful vowels into a theatrical wail. Keep consonants grounded.`,
-        actingAdvice: `Audiences are moved not by seeing an actor cry, but by seeing an actor fight NOT to cry. Keep your eyes heavy and still; allow your breath to hitch slightly on the intake before speaking.`,
-        practiceExercise: `Deliver your line with a 1.5-second downward gaze, swallow quietly, then raise your eyes into the lens with clear vulnerability.`,
-      };
-    } else if (question.includes('controlled anger') || question.includes('anger')) {
-      response = {
-        ...response,
-        languageCorrection: `In ${currentLanguage.name}, articulate your sentence-ending imperative verbs with crisp dental precision rather than loud vocal volume.`,
-        actingAdvice: `Shouting releases the character's energy and reduces dramatic tension. True menace comes from stillness. Lower your voice into a steady, resonant chest whisper and stop blinking.`,
-        practiceExercise: `Lock eyes onto a fixed point, breathe out from your abdomen, and speak at 70% volume while keeping your shoulders pinned down.`,
-      };
-    } else if (question.includes('pause')) {
-      response = {
-        ...response,
-        languageCorrection: `In Dravidian and Indo-Aryan sentence structures, placing the pause before the verb or question particle heightens the suspense.`,
-        actingAdvice: `A pause is not empty silence; it is where the character discovers their next thought. Inhale the thought before you speak the word.`,
-        practiceExercise: `Count 2 internal beats between the pronoun and the revelation clause. Let the audience watch the thought cross your eyes.`,
-      };
-    } else if (question.includes('eyes') || question.includes('eye')) {
-      response = {
-        ...response,
-        languageCorrection: `Match eye shifts with phrase boundaries rather than shifting eyes randomly mid-word.`,
-        actingAdvice: `Rapid erratic blinking signals an unprepared actor. Hold eye contact on a single pupil of your partner. Break contact only when your character is overwhelmed or recalling a memory.`,
-        practiceExercise: `Perform your dialogue with a single intentional focal shift: look down on the discovery, then lock into the listener for the conclusion.`,
-      };
-    } else if (question.includes('overacting')) {
-      response = {
-        ...response,
-        languageCorrection: `Drop unnecessary dramatic flourishes. Speak with the casual economy of a native speaker having a private conversation.`,
-        actingAdvice: `Trust that the camera sees everything. If you feel it internally and think the exact thought, the micro-muscles of your face will communicate it without you needing to push.`,
-        practiceExercise: `Perform the dialogue with your body completely relaxed and motionless. Let only the voice and eyes do the work.`,
-      };
-    } else {
-      response = {
-        ...response,
-        languageCorrection: `Ensure retroflex consonants and vowel lengths match natural ${currentLanguage.name} rhythms.`,
-        actingAdvice: `Clarify your character's immediate objective: what do you need the other person in the scene to feel or do right now?`,
-        practiceExercise: `Run the line 3 times: first at 50% emotional intensity, then 100%, then settle at an authentic 75%.`,
-      };
-    }
-
-    setMessages((prev) => [...prev, userMsg, response]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputQuestion('');
+    setIsLoading(true);
+
+    try {
+      const response = await aiActingCoachService.askCoach({
+        question,
+        languageCode: currentLanguage.code,
+        languageName: currentLanguage.name,
+        currentRole: profile.currentRole,
+      });
+
+      const coachMsg: CoachMessage = {
+        id: `coach-${Date.now()}`,
+        sender: 'coach',
+        source: response.source,
+        text: response.message,
+        languageCorrection: response.languageCorrection,
+        actingAdvice: response.actingAdvice,
+        practiceExercise: response.practiceExercise,
+      };
+
+      setMessages((prev) => [...prev, coachMsg]);
+    } catch (err: any) {
+      const errorMsg: CoachMessage = {
+        id: `coach-err-${Date.now()}`,
+        sender: 'coach',
+        source: 'local-rule-based',
+        text: 'Coaching response could not be generated. Please try asking with different phrasing.',
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -117,14 +104,34 @@ export const AIActingCoachPage: React.FC = () => {
               <Bot className="w-5 h-5" />
             </span>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">
-              AI Acting Coach
+              {isServiceConfigured ? 'AI Acting Coach' : 'Acting Coach (Demo Mode)'}
             </h1>
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                isServiceConfigured
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+              }`}
+            >
+              {isServiceConfigured ? 'Live AI Connected' : 'Rule-Based Demo Mode'}
+            </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Get structured performance direction and linguistic coaching for your {currentLanguage.name} roles.
           </p>
         </div>
       </div>
+
+      {/* Transparent AI Configuration Notice */}
+      {!isServiceConfigured && (
+        <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-xs flex items-start gap-2.5">
+          <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-amber-900 dark:text-amber-200">
+            <span className="font-bold">AI service not configured: </span>
+            Operating in local rule-based rehearsal mode. To connect an external LLM endpoint, set <code className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 rounded font-mono text-[11px]">VITE_AI_COACH_API_URL</code> in your environment.
+          </div>
+        </div>
+      )}
 
       {/* Suggested Quick Questions */}
       <div className="space-y-2">
@@ -135,8 +142,9 @@ export const AIActingCoachPage: React.FC = () => {
           {quickPromptQuestions.map((q, idx) => (
             <button
               key={idx}
+              disabled={isLoading}
               onClick={() => handleSendPrompt(q)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-amber-400 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
+              className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-amber-400 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors disabled:opacity-50"
             >
               {q}
             </button>
@@ -162,6 +170,15 @@ export const AIActingCoachPage: React.FC = () => {
                     🎬
                   </div>
                   <span className="font-bold text-slate-900 dark:text-white">Acting Coach</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                      m.source === 'remote-ai'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {m.source === 'remote-ai' ? 'Live AI Response' : 'Local Rule-Based Guidance'}
+                  </span>
                 </div>
 
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{m.text}</p>
@@ -198,6 +215,15 @@ export const AIActingCoachPage: React.FC = () => {
             )}
           </div>
         ))}
+
+        {isLoading && (
+          <div className="flex flex-col items-start animate-pulse">
+            <div className="p-4 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-500 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />
+              <span>Analyzing performance question and preparing acting direction...</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input Box */}

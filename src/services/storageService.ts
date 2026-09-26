@@ -10,31 +10,13 @@ const ACTING_KEY = 'scenelingo_acting';
 const REVIEWS_KEY = 'scenelingo_reviews';
 
 export const defaultActingProgress: ActingProgressState = {
-  practicedEmotions: ['happiness', 'sadness', 'anger'],
-  completedDialogues: ['act-dial-1'],
-  completedVoiceExercises: ['voice-happy', 'voice-sad'],
-  completedEyeExercises: ['eye-1'],
-  completedFacialExercises: ['face-1'],
-  completedChallenges: [1],
-  selfEvaluations: [
-    {
-      id: 'eval-1',
-      date: 'Yesterday',
-      dialogueId: 'act-dial-1',
-      emotion: 'sadness',
-      checklist: {
-        maintainedEmotion: true,
-        naturalFace: true,
-        effectiveEyes: true,
-        appropriatePauses: true,
-        changedVoice: true,
-        avoidedOveracting: true,
-        naturalBody: true,
-        clearPronunciation: true,
-      },
-      notes: 'Focused on relaxing shoulders and speaking with softer breath resonance.',
-    },
-  ],
+  practicedEmotions: [],
+  completedDialogues: [],
+  completedVoiceExercises: [],
+  completedEyeExercises: [],
+  completedFacialExercises: [],
+  completedChallenges: [],
+  selfEvaluations: [],
 };
 
 export const defaultProfile: UserProfile = {
@@ -42,12 +24,12 @@ export const defaultProfile: UserProfile = {
   targetLanguage: 'te', // Telugu as primary initial language
   level: 'beginner',
   goalMinutesPerDay: 15,
-  streakDays: 4,
-  totalXp: 340,
-  completedLessonsCount: 3,
-  learnedWordsCount: 18,
-  speakingSessionsCount: 5,
-  isOnboarded: true,
+  streakDays: 1,
+  totalXp: 0,
+  completedLessonsCount: 0,
+  learnedWordsCount: 0,
+  speakingSessionsCount: 0,
+  isOnboarded: false,
   theme: 'light',
   actorGoals: ['Dialogue Delivery', 'Language Pronunciation', 'Emotional Expression', 'Audition Preparation'],
   actingMedium: 'Film',

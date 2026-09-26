@@ -688,6 +688,41 @@ export const EMOTIONS_DATA: EmotionDetail[] = [
       { level: 4, label: 'Soul Longing', guidance: 'Whispering their name into silence, complete surrender to love.' },
     ],
   },
+  {
+    id: 'vulnerability',
+    name: 'Vulnerability',
+    emoji: '🕊️',
+    shortDescription: 'Defenseless openness, disarming honesty, and dropping emotional armor.',
+    thought: 'I am taking a terrifying risk by telling you the truth about how I feel.',
+    face: {
+      overall: 'Completely unarmored facial muscles; absence of defensive tightening around the mouth or eyes.',
+      eyes: 'Open, defenseless gaze directly into the other person’s eyes; moist and searching.',
+      eyebrows: 'Slightly raised in the center with zero skepticism or combativeness.',
+      forehead: 'Soft and relaxed.',
+      mouth: 'Unclenched, slightly parted as if waiting for mercy or acceptance.',
+      jaw: 'Dropped, vulnerable, unguarded.',
+    },
+    voice: {
+      pitch: 'True natural pitch register; stripped of performance polish or vocal mask.',
+      volume: 'Intimate and tender, speaking close to the ear or heart.',
+      speed: 'Hesitant and unhurried; words are offered gently like fragile objects.',
+      pauses: 'Vulnerable breath pauses where the character awaits the other person’s reaction.',
+      energy: 'Open, disarming, exposed.',
+      emotionalTone: 'Tender, courageous, honest.',
+    },
+    body: {
+      posture: 'Open chest, unclenched torso, yielding rather than rigid.',
+      shoulders: 'Dropped and unguarded.',
+      hands: 'Open palms facing up or softly held in front, empty of defenses.',
+      breathing: 'Deep, open, slightly unsteady breath.',
+    },
+    intensityLevels: [
+      { level: 1, label: 'Quiet Honesty', guidance: 'Admitting a private thought without evasion.' },
+      { level: 2, label: 'Tender Exposure', guidance: 'Letting your voice tremble slightly as you share a secret.' },
+      { level: 3, label: 'Unmasked Truth', guidance: 'Looking into their eyes and surrendering your pride.' },
+      { level: 4, label: 'Complete Surrender', guidance: 'No walls left; heart completely on the line.' },
+    ],
+  },
 ];
 
 // Multi-language dramatic dialogue scenarios with 16 Scene Types for Actors

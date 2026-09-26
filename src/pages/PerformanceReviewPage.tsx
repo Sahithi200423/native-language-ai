@@ -35,6 +35,7 @@ export const PerformanceReviewPage: React.FC = () => {
   const [videoBlobUrl, setVideoBlobUrl] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const [fileSizeText, setFileSizeText] = useState<string>('');
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   // Selected Dialogue & Emotion for Take
   const [selectedDialogueId, setSelectedDialogueId] = useState<string>(ACTING_DIALOGUES[0].id);
@@ -44,6 +45,7 @@ export const PerformanceReviewPage: React.FC = () => {
   const [isRecordingWebcam, setIsRecordingWebcam] = useState(false);
   const [recordedSeconds, setRecordedSeconds] = useState(0);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -61,25 +63,47 @@ export const PerformanceReviewPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
 
-  // Cleanup blob URLs on unmount
+  // Keep cameraStreamRef in sync with state
+  useEffect(() => {
+    cameraStreamRef.current = cameraStream;
+  }, [cameraStream]);
+
+  // Robust cleanup of camera/mic streams and blob URLs on component unmount
   useEffect(() => {
     return () => {
       if (videoBlobUrl) {
         URL.revokeObjectURL(videoBlobUrl);
       }
-      if (cameraStream) {
-        cameraStream.getTracks().forEach((t) => t.stop());
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
       }
     };
   }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setVideoError(null);
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate video type
     if (!file.type.startsWith('video/')) {
-      alert('Please upload a valid video file (MP4, WebM, MOV).');
+      setVideoError('Please upload a valid video file format (MP4, WebM, or MOV).');
+      return;
+    }
+
+    // Validate size (0 byte check)
+    if (file.size === 0) {
+      setVideoError('The selected file is empty (0 bytes). Please upload a valid recorded take.');
+      return;
+    }
+
+    // Validate size (100MB limit)
+    const MAX_SIZE = 100 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setVideoError(`Video file size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 100MB limit. Please upload a shorter scene take.`);
       return;
     }
 
@@ -98,9 +122,13 @@ export const PerformanceReviewPage: React.FC = () => {
     tempVideo.onloadedmetadata = () => {
       setVideoDuration(Math.round(tempVideo.duration) || 15);
     };
+    tempVideo.onerror = () => {
+      setVideoDuration(15);
+    };
   };
 
   const startWebcamRecording = async () => {
+    setVideoError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
@@ -108,6 +136,7 @@ export const PerformanceReviewPage: React.FC = () => {
       });
 
       setCameraStream(stream);
+      cameraStreamRef.current = stream;
       if (webcamVideoRef.current) {
         webcamVideoRef.current.srcObject = stream;
       }
@@ -123,12 +152,17 @@ export const PerformanceReviewPage: React.FC = () => {
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setVideoBlobUrl(url);
-        setFileSizeText(`${(blob.size / (1024 * 1024)).toFixed(1)} MB`);
-        setVideoDuration(recordedSeconds || 12);
-        setVideoFile(new File([blob], 'rehearsal_take.webm', { type: 'video/webm' }));
+        if (recordedChunksRef.current.length > 0) {
+          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+          if (videoBlobUrl) {
+            URL.revokeObjectURL(videoBlobUrl);
+          }
+          const url = URL.createObjectURL(blob);
+          setVideoBlobUrl(url);
+          setFileSizeText(`${(blob.size / (1024 * 1024)).toFixed(1)} MB`);
+          setVideoDuration(recordedSeconds || 12);
+          setVideoFile(new File([blob], 'rehearsal_take.webm', { type: 'video/webm' }));
+        }
       };
 
       recorder.start();
@@ -137,21 +171,48 @@ export const PerformanceReviewPage: React.FC = () => {
       timerIntervalRef.current = setInterval(() => {
         setRecordedSeconds((prev) => prev + 1);
       }, 1000);
-    } catch (err) {
-      alert('Camera access denied or unavailable. You can still upload an MP4/WebM video file.');
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setVideoError('Camera or microphone access was denied. Please allow camera permissions in your browser address bar or upload a video file.');
+      } else if (err.name === 'NotFoundError') {
+        setVideoError('No camera or microphone hardware found on this computer. You can upload an MP4/WebM video instead.');
+      } else {
+        setVideoError(`Could not start camera recording: ${err.message || 'Device error'}. You can still upload a video file.`);
+      }
+      setIsRecordingWebcam(false);
     }
   };
 
   const stopWebcamRecording = () => {
-    if (mediaRecorderRef.current && isRecordingWebcam) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((t) => t.stop());
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((t) => t.stop());
       setCameraStream(null);
+      cameraStreamRef.current = null;
     }
-    clearInterval(timerIntervalRef.current);
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
     setIsRecordingWebcam(false);
+  };
+
+  const cancelWebcamRecording = () => {
+    recordedChunksRef.current = [];
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
+      cameraStreamRef.current = null;
+    }
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    setIsRecordingWebcam(false);
+    setRecordedSeconds(0);
   };
 
   const deleteCurrentVideo = () => {
@@ -162,6 +223,7 @@ export const PerformanceReviewPage: React.FC = () => {
     setVideoFile(null);
     setVideoDuration(0);
     setFileSizeText('');
+    setVideoError(null);
   };
 
   const handleStartAnalysis = async () => {
@@ -248,6 +310,22 @@ export const PerformanceReviewPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Video Validation / Permission Error Banner */}
+      {videoError && (
+        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start justify-between gap-3 text-xs text-rose-800 dark:text-rose-200">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <span>{videoError}</span>
+          </div>
+          <button
+            onClick={() => setVideoError(null)}
+            className="text-rose-500 hover:text-rose-700 font-bold px-2 py-0.5 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/50"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Upload & Setup Section if no video loaded */}
       {!videoBlobUrl && !isRecordingWebcam && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -261,7 +339,7 @@ export const PerformanceReviewPage: React.FC = () => {
                 Upload Acting Video
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Supports MP4, WebM, or MOV takes from your phone or camera
+                Supports MP4, WebM, or MOV takes (up to 100MB)
               </p>
             </div>
             <label className="cursor-pointer px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all">
@@ -314,13 +392,21 @@ export const PerformanceReviewPage: React.FC = () => {
               RECORDING {formatSeconds(recordedSeconds)}
             </div>
           </div>
-          <button
-            onClick={stopWebcamRecording}
-            className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg"
-          >
-            <Square className="w-4 h-4 fill-current" />
-            Stop & Preview Take
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={stopWebcamRecording}
+              className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg"
+            >
+              <Square className="w-4 h-4 fill-current" />
+              Stop & Preview Take
+            </button>
+            <button
+              onClick={cancelWebcamRecording}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+            >
+              Cancel Take
+            </button>
+          </div>
         </div>
       )}
 
@@ -462,9 +548,18 @@ export const PerformanceReviewPage: React.FC = () => {
 
                   {/* 8-Category Performance Grid */}
                   <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                      8-Dimension Performance Analysis
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                        {videoAnalysisService.isServiceConnected()
+                          ? '8-Dimension AI Performance Review'
+                          : '8-Dimension Guided Performance Evaluation'}
+                      </h3>
+                      {!videoAnalysisService.isServiceConnected() && (
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          Self-Audit (No AI score simulated)
+                        </span>
+                      )}
+                    </div>
 
                     <div className="space-y-3">
                       {activeReview.dimensions.map((dim, idx) => {

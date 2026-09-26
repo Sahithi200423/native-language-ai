@@ -296,13 +296,15 @@ export type EmotionType =
   | 'nervousness'
   | 'hope'
   | 'regret'
-  | 'longing';
+  | 'longing'
+  | 'vulnerability';
 
 export interface EmotionDetail {
   id: EmotionType;
   name: string;
   emoji: string;
   shortDescription: string;
+  thought?: string;
   face: {
     overall: string;
     eyes: string;

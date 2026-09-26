@@ -168,6 +168,20 @@ export const EmotionPracticeTab: React.FC<EmotionPracticeTabProps> = ({
           </div>
         </div>
 
+        {/* THOUGHT: Internal Character Monologue */}
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-5 dark:bg-amber-400/5 dark:border-amber-400/20">
+          <div className="flex items-center gap-2 mb-2 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase tracking-wider">
+            <Sparkles className="w-4 h-4" />
+            <span>Character Internal Thought (Subtext)</span>
+          </div>
+          <p className="text-sm font-semibold italic text-slate-800 dark:text-slate-200">
+            "{currentEmotion.thought || `I need the other person to understand how deeply this moment matters to me.`}"
+          </p>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1">
+            Always anchor the spoken dialogue in this underlying thought. If the thought is active, the eyes and micro-expressions will naturally align without forcing.
+          </span>
+        </div>
+
         {/* 4 Core Acting Pillar Cards: Face, Eyes, Voice, Body */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 1. FACE */}

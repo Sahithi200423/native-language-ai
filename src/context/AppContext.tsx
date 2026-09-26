@@ -79,14 +79,99 @@ interface AppContextType {
   resetProgress: () => void;
 }
 
+const TAB_TO_ROUTE: Record<ActiveNavTab, string> = {
+  home: 'home',
+  'language-studio': 'language',
+  'dialogue-lab': 'dialogues',
+  'emotion-studio': 'emotions',
+  speaking: 'speaking',
+  'performance-review': 'performance',
+  mistakes: 'mistakes',
+  vocabulary: 'vocabulary',
+  'ai-acting-coach': 'coach',
+  progress: 'progress',
+  settings: 'settings',
+  dashboard: 'home',
+  learn: 'language',
+  practice: 'dialogues',
+  tutor: 'coach',
+  acting: 'emotions',
+};
+
+const ROUTE_TO_TAB: Record<string, ActiveNavTab> = {
+  home: 'home',
+  dashboard: 'home',
+  language: 'language-studio',
+  'language-studio': 'language-studio',
+  learn: 'language-studio',
+  dialogues: 'dialogue-lab',
+  'dialogue-lab': 'dialogue-lab',
+  emotions: 'emotion-studio',
+  'emotion-studio': 'emotion-studio',
+  acting: 'emotion-studio',
+  speaking: 'speaking',
+  performance: 'performance-review',
+  'performance-review': 'performance-review',
+  mistakes: 'mistakes',
+  vocabulary: 'vocabulary',
+  coach: 'ai-acting-coach',
+  'ai-acting-coach': 'ai-acting-coach',
+  tutor: 'ai-acting-coach',
+  progress: 'progress',
+  settings: 'settings',
+};
+
+const getInitialTabFromUrl = (): ActiveNavTab => {
+  if (typeof window === 'undefined') return 'home';
+  const path = window.location.pathname.replace(/^\/|\/$/g, '').toLowerCase();
+  if (path && ROUTE_TO_TAB[path]) {
+    return ROUTE_TO_TAB[path];
+  }
+  const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+  if (hash && ROUTE_TO_TAB[hash]) {
+    return ROUTE_TO_TAB[hash];
+  }
+  return 'home';
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile>(() => storageService.getUserProfile());
-  const [activeTab, setActiveTab] = useState<ActiveNavTab>('home');
-  const [showLandingPage, setShowLandingPage] = useState<boolean>(!profile.isOnboarded);
+  const [activeTab, setActiveTabState] = useState<ActiveNavTab>(() => getInitialTabFromUrl());
+  const [showLandingPage, setShowLandingPage] = useState<boolean>(() => {
+    // If user navigated directly to an explicit route (e.g. /dialogues or #dialogues), don't trap them on landing
+    const initialTab = getInitialTabFromUrl();
+    if (initialTab !== 'home') return false;
+    return !profile.isOnboarded;
+  });
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+
+  const setActiveTab = (tab: ActiveNavTab) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      const route = TAB_TO_ROUTE[tab] || 'home';
+      const targetPath = route === 'home' ? '/' : `/${route}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ tab }, '', targetPath);
+      }
+    }
+  };
+
+  // Listen to browser Back / Forward buttons and hash changes
+  useEffect(() => {
+    const handlePopState = () => {
+      const tab = getInitialTabFromUrl();
+      setActiveTabState(tab);
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
 
   // Vocabulary state with local storage merging
   const [vocabulary, setVocabulary] = useState<VocabularyWord[]>(() => {
