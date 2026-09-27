@@ -63,16 +63,21 @@ export const PerformanceReviewPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
 
-  // Keep cameraStreamRef in sync with state
+  // Keep cameraStreamRef and videoBlobUrlRef in sync with state for unmount cleanup
+  const videoBlobUrlRef = useRef<string | null>(null);
   useEffect(() => {
     cameraStreamRef.current = cameraStream;
   }, [cameraStream]);
 
+  useEffect(() => {
+    videoBlobUrlRef.current = videoBlobUrl;
+  }, [videoBlobUrl]);
+
   // Robust cleanup of camera/mic streams and blob URLs on component unmount
   useEffect(() => {
     return () => {
-      if (videoBlobUrl) {
-        URL.revokeObjectURL(videoBlobUrl);
+      if (videoBlobUrlRef.current) {
+        URL.revokeObjectURL(videoBlobUrlRef.current);
       }
       if (cameraStreamRef.current) {
         cameraStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -107,8 +112,8 @@ export const PerformanceReviewPage: React.FC = () => {
       return;
     }
 
-    if (videoBlobUrl) {
-      URL.revokeObjectURL(videoBlobUrl);
+    if (videoBlobUrlRef.current) {
+      URL.revokeObjectURL(videoBlobUrlRef.current);
     }
 
     const url = URL.createObjectURL(file);
@@ -141,7 +146,21 @@ export const PerformanceReviewPage: React.FC = () => {
         webcamVideoRef.current.srcObject = stream;
       }
 
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      let recorderOptions: MediaRecorderOptions = {};
+      if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+          recorderOptions = { mimeType: 'video/webm;codecs=vp9' };
+        } else if (MediaRecorder.isTypeSupported('video/webm')) {
+          recorderOptions = { mimeType: 'video/webm' };
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+          recorderOptions = { mimeType: 'video/mp4' };
+        }
+      }
+
+      const recorder = recorderOptions.mimeType
+        ? new MediaRecorder(stream, recorderOptions)
+        : new MediaRecorder(stream);
+
       mediaRecorderRef.current = recorder;
       recordedChunksRef.current = [];
 
@@ -153,15 +172,16 @@ export const PerformanceReviewPage: React.FC = () => {
 
       recorder.onstop = () => {
         if (recordedChunksRef.current.length > 0) {
-          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-          if (videoBlobUrl) {
-            URL.revokeObjectURL(videoBlobUrl);
+          const mimeType = recorder.mimeType || 'video/webm';
+          const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+          if (videoBlobUrlRef.current) {
+            URL.revokeObjectURL(videoBlobUrlRef.current);
           }
           const url = URL.createObjectURL(blob);
           setVideoBlobUrl(url);
           setFileSizeText(`${(blob.size / (1024 * 1024)).toFixed(1)} MB`);
           setVideoDuration(recordedSeconds || 12);
-          setVideoFile(new File([blob], 'rehearsal_take.webm', { type: 'video/webm' }));
+          setVideoFile(new File([blob], 'rehearsal_take.webm', { type: mimeType }));
         }
       };
 

@@ -1,9 +1,10 @@
 import React from 'react';
 import { AudioButton } from './AudioButton';
-import { TargetLanguageContent } from '../../types';
+import { SupportedLanguageCode, TargetLanguageContent } from '../../types';
 
 interface TargetLanguageBlockProps {
   content: TargetLanguageContent;
+  langCode?: SupportedLanguageCode;
   size?: 'sm' | 'md' | 'lg';
   showAudio?: boolean;
   showMeaning?: boolean;
@@ -16,6 +17,7 @@ interface TargetLanguageBlockProps {
 
 export const TargetLanguageBlock: React.FC<TargetLanguageBlockProps> = ({
   content,
+  langCode,
   size = 'md',
   showAudio = false,
   showMeaning = true,
@@ -55,7 +57,8 @@ export const TargetLanguageBlock: React.FC<TargetLanguageBlockProps> = ({
         </div>
         {showAudio && (
           <AudioButton
-            text={content.romanization}
+            text={content.native || content.romanization}
+            langCode={langCode || 'te'}
             size={size === 'lg' ? 'md' : 'sm'}
             variant="ghost"
           />
